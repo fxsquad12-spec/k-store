@@ -1,0 +1,176 @@
+
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>K STORE | Loja Online</title>
+  <link rel="stylesheet" href="style.css">
+  
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script defer src="supabase.js"></script>
+<script defer src="script.js"></script>
+</head>
+<body>
+
+  <header class="topbar">
+    <a class="logo" href="#">K STORE<span>.</span></a>
+    <nav>
+      <a href="#produtos">Produtos</a>
+      <a href="#pagamentos">Pagamentos</a>
+      <button id="adminBtn" class="btn btn-outline">Administrador</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <p class="eyebrow">BEM-VINDO À K STORE</p>
+      <h1>O teu estilo.<br><span>A tua escolha.</span></h1>
+      <p>Descobre os nossos produtos e compra facilmente pelo WhatsApp.</p>
+      <a href="#produtos" class="btn btn-light">Ver produtos ↓</a>
+    </section>
+
+    <section id="produtos" class="section">
+      <p class="eyebrow">A NOSSA COLEÇÃO</p>
+      <h2>Produtos em destaque</h2>
+      <p class="muted">Todos os preços são apresentados em meticais (MT).</p>
+      <div id="productGrid" class="product-grid"></div>
+      <p id="emptyProducts" class="muted">
+        Ainda não existem produtos. Volta mais tarde!
+      </p>
+    </section>
+
+    <section id="pagamentos" class="payment-section">
+      <p class="eyebrow">COMPRA SIMPLES</p>
+      <h2>Escolhe. Paga. Envia.</h2>
+      <p>Escolhe o produto, paga por e-Mola ou M-Pesa e envia o comprovativo manualmente pelo WhatsApp.</p>
+    </section>
+  </main>
+
+  <footer>
+    <a class="logo" href="#">K STORE<span>.</span></a>
+    <p>© <span id="year"></span> K STORE — Moçambique</p>
+  </footer>
+
+  <!-- Janela de login e administração -->
+  <div id="adminModal" class="modal hidden">
+    <div class="modal-box">
+      <button class="close" data-close="adminModal">×</button>
+
+      <div id="loginView">
+        <p class="eyebrow">ÁREA RESTRITA</p>
+        <h2>Administrador</h2>
+        <form id="loginForm">
+          <label for="password">Palavra-passe</label>
+          <input id="password" type="password" required>
+          <button class="btn btn-light full" type="submit">Entrar</button>
+          <p id="loginError" class="error hidden">Palavra-passe incorreta.</p>
+        </form>
+      </div>
+
+      <div id="dashboard" class="hidden">
+        <div class="dashboard-heading">
+          <h2>Painel K STORE</h2>
+          <button id="logoutBtn" class="btn btn-outline">Sair</button>
+        </div>
+
+        <div class="tabs">
+          <button class="tab active" data-tab="productsTab">Produtos</button>
+          <button class="tab" data-tab="settingsTab">Pagamentos</button>
+        </div>
+
+        <section id="productsTab">
+          <h3 id="formTitle">Adicionar produto</h3>
+          <form id="productForm">
+            <input id="productId" type="hidden">
+
+            <label for="productName">Nome do produto *</label>
+            <input id="productName" required maxlength="80" placeholder="Ex.: T-shirt K">
+
+            <label for="productCategory">Categoria</label>
+            <input id="productCategory" placeholder="Ex.: Roupa">
+
+            <label for="productPrice">Preço normal (MT) *</label>
+            <input id="productPrice" type="number" min="0" step="0.01" required>
+
+            <label for="productPromo">Preço promocional (MT)</label>
+            <input id="productPromo" type="number" min="0" step="0.01" placeholder="Opcional">
+
+            <label for="productDescription">Descrição</label>
+            <textarea id="productDescription" rows="3"></textarea>
+
+            <label for="productImage">Fotografia</label>
+            <input id="productImage" type="file" accept="image/*">
+            <img id="imagePreview" class="preview hidden" alt="Pré-visualização">
+
+            <button class="btn btn-light full" type="submit">Guardar produto</button>
+            <button id="cancelEdit" class="btn btn-outline full hidden" type="button">Cancelar edição</button>
+          </form>
+
+          <h3 class="subheading">Produtos existentes</h3>
+          <div id="adminProductList"></div>
+        </section>
+
+        <section id="settingsTab" class="hidden">
+          <h3>Dados de pagamento</h3>
+          <form id="settingsForm">
+            <label for="emola">Número e-Mola</label>
+            <input id="emola" placeholder="Número de pagamento">
+
+            <label for="mpesa">Número M-Pesa</label>
+            <input id="mpesa" placeholder="Número de pagamento">
+
+            <label for="whatsapp">WhatsApp da loja *</label>
+            <input id="whatsapp" required placeholder="25884xxxxxxx">
+
+            <label for="instructions">Instruções para o cliente</label>
+            <textarea id="instructions" rows="4"></textarea>
+
+            <button class="btn btn-light full" type="submit">Guardar definições</button>
+          </form>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- Janela para preparar a encomenda -->
+  <div id="orderModal" class="modal hidden">
+    <div class="modal-box">
+      <button class="close" data-close="orderModal">×</button>
+      <p class="eyebrow">FINALIZAR ENCOMENDA</p>
+      <h2 id="orderTitle">Comprar produto</h2>
+      <div id="orderSummary" class="order-summary"></div>
+
+      <form id="orderForm">
+        <label for="customerName">O teu nome *</label>
+        <input id="customerName" required>
+
+        <label for="customerPhone">O teu contacto</label>
+        <input id="customerPhone" placeholder="Opcional">
+
+        <label for="paymentMethod">Método de pagamento</label>
+        <select id="paymentMethod">
+          <option value="e-Mola">e-Mola</option>
+          <option value="M-Pesa">M-Pesa</option>
+        </select>
+
+        <div id="paymentDetails" class="payment-details"></div>
+
+        <label for="receipt">Comprovativo (opcional nesta etapa)</label>
+        <input id="receipt" type="file" accept="image/*,.pdf">
+
+        <p class="muted small">
+          Depois de abrir o WhatsApp, anexa o comprovativo manualmente.
+        </p>
+
+        <button class="btn btn-light full" type="submit">
+          Continuar no WhatsApp ↗
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+</body>
+</html>
