@@ -38,15 +38,28 @@ function readStorage(key, fallback) {
   }
 }
 
-function saveSettings() {
-  try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-    return true;
-  } catch {
-    notify("Não foi possível guardar as definições.");
+ 
+async function saveSettings() {
+  const { error } = await window.supabaseClient
+    .from("store_settings")
+    .upsert({
+      id: 1,
+      emola_number: settings.emola,
+      mpesa_number: settings.mpesa,
+      whatsapp_number: settings.whatsapp,
+      instructions: settings.instructions,
+      updated_at: new Date().toISOString()
+    }, { onConflict: "id" });
+
+  if (error) {
+    console.error("Erro ao guardar definições:", error);
+    notify("Erro ao guardar: " + error.message);
     return false;
   }
+
+  return true;
 }
+
 
 /* ---------- FUNÇÕES GERAIS ---------- */
 
@@ -559,6 +572,31 @@ function renderAdminProducts() {
 
 /* ---------- DEFINIÇÕES DE PAGAMENTO ---------- */
 
+async function loadSettings() {
+  const { data, error } = await window.supabaseClient
+    .from("store_settings")
+    .select("*")
+    .eq("id", 1)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Erro ao carregar definições:", error);
+    return;
+  }
+
+  if (data) {
+    settings = {
+      emola: data.emola_number || "",
+      mpesa: data.mpesa_number || "",
+      whatsapp: data.whatsapp_number || "",
+      instructions: data.instructions ||
+        "Paga por e-Mola ou M-Pesa e envia o comprovativo pelo WhatsApp."
+    };
+  }
+
+  updatePaymentDetails();
+}
+
 function renderSettings() {
   $("emola").value = settings.emola || "";
   $("mpesa").value = settings.mpesa || "";
@@ -566,13 +604,33 @@ function renderSettings() {
   $("instructions").value = settings.instructions || "";
 }
 
-$("settingsForm").addEventListener("submit", event => {
+$("settingsForm").addEventListener("submit", async event => {
   event.preventDefault();
 
   if (!isAdmin) {
     notify("Entra primeiro no painel.");
     return;
   }
+
+  const oldSettings = { ...settings };
+
+  settings = {
+    emola: $("emola").value.trim(),
+    mpesa: $("mpesa").value.trim(),
+    whatsapp: normalizeNumber($("whatsapp").value),
+    instructions: $("instructions").value.trim()
+  };
+
+  const saved = await saveSettings();
+
+  if (!saved) {
+    settings = oldSettings;
+    return;
+  }
+
+  updatePaymentDetails();
+  notify("Definições guardadas para todos os clientes!");
+});
 
   const oldSettings = settings;
 
@@ -590,7 +648,7 @@ $("settingsForm").addEventListener("submit", event => {
 
   updatePaymentDetails();
   notify("Definições guardadas neste navegador.");
-});
+;
 
 /* ---------- ENCOMENDAS ---------- */
 
@@ -692,3 +750,4 @@ renderSettings();
 renderProducts();
 
 carregarProdutosSupabase();
+loadSettings();
